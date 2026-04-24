@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        /* === ОСНОВА СТРАНИЦЫ === */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;  /* Цвет фона */
+            overflow-x: auto;           /* Горизонтальный скролл если не влезает */
+        }
+
+        /* === ПАНЕЛЬ С КНОПКАМИ ТРЕКОВ (ВЕРХНЯЯ) === */
+        .top-nav {
+            display: flex;              /* Кнопки в ряд */
+            flex-wrap: nowrap;          /* Не переносить */
+            gap: 0;                     /* Без зазоров */
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #ccc;
+            width: max-content;         /* Ширина по содержимому */
+        }
+
+        .top-nav button {
+            display: flex;
+            align-items: center;
+            gap: 8px;                   /* Зазор между номером и названием */
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #06020a;
+            padding: 10px 16px;
+            cursor: pointer;
+            border-radius:0;            /* Острые углы */
+            white-space: nowrap;        /* Текст в одну строку */
+            flex-shrink: 0;             /* Не сжимать кнопку */
+        }
+
+        .top-nav button:not(:last-child) {
+            border-right: none;         /* Слипание кнопок (убрать правую рамку) */
+        }
+
+        .top-nav button.active {
+            background-color: #8937f4;     /* Активная кнопка — инверсия */
+            color: #fff;
+        }
+
+        .track-num {
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .track-name {
+            white-space: nowrap;
+        }
+
+        /* === ОБЛАСТЬ С РАСПИСАНИЕМ === */
+        .content-wrapper {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            overflow-x: auto;           /* Скролл если расписание шире экрана */
+        }
+
+        /* === ЛИНИЯ ВРЕМЕНИ (TIMELINE) === */
+        .timeline {
+            position: relative;         /* Чтобы линия ::before была внутри */
+            display: flex;              /* Колонки семестров в ряд */
+            align-items: stretch;       /* ⚠️ Растянуть все колонки до высоты самой высокой */
+            min-width: max-content;     /* Не сжиматься */
+            margin: 100px 0;            /* ▲ Отступ сверху/снизу (100px — сдвигает вниз) */
+            padding: 0 20px;
+        }
+
+        /* Синяя линия по центру */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;                   /* По центру родителя */
+            left: 0;
+            right: 0;
+            height: 2px;                /* Толщина линии */
+            background-color: #0056b3;  /* Цвет линии */
+            transform: translateY(-50%);
+            z-index: 0;                 /* Под кружками */
+        }
+
+        /* === ОДНА КОЛОНКА СЕМЕСТРА === */
+        .semester-column {
+            display: flex;
+            flex-direction: column;     /* Верх → маркер → низ */
+            align-items: center;
+            flex: 0 0 auto;
+            min-width: 200px;           /* Минимальная ширина колонки */
+            position: relative;
+            z-index: 1;                 /* Над линией */
+        }
+
+        /* === ВЕРХНИЕ И НИЖНИЕ ДИСЦИПЛИНЫ === */
+        .disciplines-above,
+        .disciplines-below {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex: 1;                    /* ⚠️ Делят высоту пополам */
+            min-height: 0;
+        }
+
+        .disciplines-above {
+            justify-content: flex-end;  /* Прижать к низу (к линии) */
+            padding-bottom: 0px;        /* ▲ Отступ от линии */
+        }
+
+        .disciplines-below {
+            justify-content: flex-start;/* Прижать к верху (к линии) — нужно добавить! */
+            padding-top: 0px;           /* ▲ Отступ от линии */
+        }
+
+        /* === СПИСОК ДИСЦИПЛИН === */
+        .disciplines-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            list-style: none;           /* Без точек */
+            padding: 0 5px;
+            margin: 0;
+            width: 100%;
+        }
+
+        .disciplines-list li {
+            text-align: center;
+            padding: 4px 8px;           /* Внутренний отступ */
+            margin: 2px 0;              /* ▲ Расстояние между дисциплинами */
+            font-size: 0.85rem;
+            color: #333;
+            word-break: break-word;     /* Перенос длинных слов */
+        }
+
+        /* Обязательные дисциплины (над линией) */
+        .disciplines-above .disciplines-list li {
+            background-color: #e8f0fe;  /* Голубой фон */
+            border: 1px solid #b0c4de;
+            border-radius: 4px;
+        }
+
+        /* Дисциплины по выбору (под линией) */
+        .disciplines-below .disciplines-list li {
+            background-color: #f3e8ff;  /* Фиолетовый фон */
+            border: 1px solid #a855f7;
+            border-radius: 4px;
+        }
+
+        /* === КРУЖОК С НОМЕРОМ СЕМЕСТРА === */
+        .semester-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;            /* ▲ Отступ от кружка до дисциплин */
+            flex-shrink: 0;             /* Не сжимать */
+        }
+
+        .semester-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;                /* Размер кружка */
+            height: 40px;
+            background-color: #0056b3;  /* Синий */
+            color: white;
+            border-radius: 50%;         /* Круг */
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 0 0 4px #f4f7f6; /* Маскирует линию под кружком */
+        }
+
+        /* === ЗАГЛУШКА ДЛЯ ПУСТЫХ СЕМЕСТРОВ === */
+        .no-disciplines {
+            color: #999;
+            font-style: italic;
+            padding: 5px;
+            text-align: center;
+        }
+
+        #schedule-container {
+            min-height: 300px;          /* Минимальная высота */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- === КНОПКИ ВЫБОРА ТРЕКА === -->
+    <nav class="top-nav" id="track-nav">
+        <button data-track="track1">
+            <span class="track-num">1.</span>
+            <span class="track-name">Дизайн компьютерных игр</span>
+        </button>
+        <button data-track="track2">
+            <span class="track-num">2.</span>
+            <span class="track-name">3D-визуализация</span>
+        </button>
+        <button data-track="track3">
+            <span class="track-num">3.</span>
+            <span class="track-name">Дизайн графических интерфейсов</span>
+        </button>
+        <button data-track="track4">
+            <span class="track-num">4.</span>
+            <span class="track-name">Разработка графических и веб-приложений</span>
+        </button>
+        <button data-track="track5">
+            <span class="track-num">5.</span>
+            <span class="track-name">Анимация и развивающие приложения</span>
+        </button>
+    </nav>
+
+    <!-- === ОСНОВНОЙ КОНТЕНТ (СЮДА ВСТАВИТСЯ РАСПИСАНИЕ) === -->
+    <div class="content-wrapper">
+        <div id="schedule-container">Пожалуйста, выберите трек для отображения расписания.</div>
+    </div>
+
+    <!-- === ЛОГИКА (JavaScript) === -->
+    <script>
+        let scheduleData = {};
+
+        // 1. Загружаем данные из JSON
+        fetch('schedule.json')
+            .then(response => response.json())
+            .then(data => {
+                scheduleData = data;
+                showTrack('track1');    // Показываем первый трек
+            })
+            .catch(error => {
+                document.getElementById('schedule-container').innerText = 
+                    'Ошибка загрузки данных...';
+            });
+
+        // 2. Функция отрисовки трека
+        function showTrack(trackId) {
+            const track = scheduleData[trackId];
+            if (!track) return;
+
+            const container = document.getElementById('schedule-container');
+            
+            // Собираем HTML
+            let html = '<div class="timeline">';
+            track.semesters.forEach(sem => {
+                // Колонка семестра
+                html += '<div class="semester-column">';
+                
+                // Верхние дисциплины
+                html += '<div class="disciplines-above">';
+                if (sem.disciplines_above && sem.disciplines_above.length > 0) {
+                    html += '<ul class="disciplines-list">';
+                    sem.disciplines_above.forEach(d => html += `<li>${d}</li>`);
+                    html += '</ul>';
+                } else {
+                    html += '<div class="no-disciplines">—</div>';
+                }
+                html += '</div>';
+                
+                // Кружок с номером
+                html += `<div class="semester-marker">
+                            <span class="semester-number">${sem.sem}</span>
+                         </div>`;
+                
+                // Нижние дисциплины
+                html += '<div class="disciplines-below">';
+                if (sem.disciplines_below && sem.disciplines_below.length > 0) {
+                    html += '<ul class="disciplines-list">';
+                    sem.disciplines_below.forEach(d => html += `<li>${d}</li>`);
+                    html += '</ul>';
+                } else {
+                    html += '<div class="no-disciplines">—</div>';
+                }
+                html += '</div></div>';
+            });
+            html += '</div>';
+            
+            container.innerHTML = html; // Вставили на страницу
+
+            // 3. Подсветка активной кнопки
+            document.querySelectorAll('.top-nav button').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`[data-track="${trackId}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        // 4. Вешаем клики на кнопки
+        document.querySelectorAll('.top-nav button').forEach(button => {
+            button.addEventListener('click', function() {
+                showTrack(this.getAttribute('data-track'));
+            });
+        });
+    </script>
+</body>
+</html>
