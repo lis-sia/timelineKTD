@@ -16,13 +16,15 @@
 
         /* === ПАНЕЛЬ С КНОПКАМИ ТРЕКОВ (ВЕРХНЯЯ) === */
         .top-nav {
-            display: flex;              /* Кнопки в ряд */
+            display: flex;
             flex-wrap: nowrap;          /* Не переносить */
-            gap: 0;                     /* Без зазоров */
+            gap: 0;
+            margin: 0;
             padding: 10px 20px;
             background-color: #ffffff;
             border-bottom: 1px solid #ccc;
-            width: max-content;         /* Ширина по содержимому */
+            box-sizing: border-box;
+            width: max-content;      /* Ширина по содержимому */
         }
 
         .top-nav button {
