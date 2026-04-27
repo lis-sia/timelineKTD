@@ -81,7 +81,7 @@
             display: flex;
             align-items: stretch;
             min-width: max-content;
-            margin: 100px 0;
+            margin: 125px 0; 
             padding: 0 20px;
         }
 
@@ -205,12 +205,12 @@
         #schedule-container {
             min-height: 300px;
         }
-        /* === АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ === */
-@media (max-width: 768px) {
+
+        @media (max-width: 768px) {
     
     /* Уменьшаем отступ сверху */
     .timeline {
-        margin: 60px 0;
+        margin: 85px 0;
         padding: 0 10px;
     }
 
@@ -301,13 +301,24 @@
         font-size: 0.9rem;
     }
 }
-        
     </style>
 </head>
 <body>
 
+    <!-- === ПЕРЕКЛЮЧАТЕЛЬ ГОДОВ (НОВОЕ) === -->
+    <div class="year-switcher">
+        <label for="year-select">Год обучения:</label>
+        <select id="year-select">
+            <option value="schedule-2025.json">2025</option>
+            <option value="schedule-2026.json">2026</option>
+            <!-- Добавьте ещё годы по аналогии -->
+            <!-- <option value="schedule-2026.json">2026</option> -->
+        </select>
+    </div>
+
     <div class="main-wrapper">
 
+        <!-- === КНОПКИ ВЫБОРА ТРЕКА === -->
         <nav class="top-nav" id="track-nav">
             <button data-track="track1">
                 <span class="track-num">1.</span>
@@ -331,36 +342,55 @@
             </button>
         </nav>
 
+        <!-- === ОСНОВНОЙ КОНТЕНТ === -->
         <div class="content-wrapper">
             <div id="schedule-container">Пожалуйста, выберите трек для отображения расписания.</div>
         </div>
 
     </div>
 
+    <!-- === ЛОГИКА (JavaScript) === -->
     <script>
-        let scheduleData = {};
+        let scheduleData = {};       // Данные текущего года
+        let currentTrackId = 'track1'; // Какой трек сейчас показан
 
-        fetch('schedule.json')
-            .then(response => response.json())
-            .then(data => {
-                scheduleData = data;
-                showTrack('track1');
-            })
-            .catch(error => {
-                document.getElementById('schedule-container').innerText = 
-                    'Ошибка загрузки данных...';
-            });
+        // === 1. ЗАГРУЗКА ДАННЫХ ПРИ СМЕНЕ ГОДА ===
+        function loadYear(filename) {
+            fetch(filename)
+                .then(response => response.json())
+                .then(data => {
+                    scheduleData = data;              // Сохраняем новые данные
+                    showTrack(currentTrackId);        // Перерисовываем текущий трек
+                })
+                .catch(error => {
+                    document.getElementById('schedule-container').innerText = 
+                        'Ошибка загрузки данных для выбранного года.';
+                    console.error('Ошибка:', error);
+                });
+        }
 
+        // === 2. ФУНКЦИЯ ОТРИСОВКИ ТРЕКА (без изменений) ===
         function showTrack(trackId) {
+            currentTrackId = trackId;                 // Запоминаем выбранный трек
+            
             const track = scheduleData[trackId];
-            if (!track) return;
+            if (!track) {
+                document.getElementById('schedule-container').innerText = 'Трек не найден.';
+                return;
+            }
 
             const container = document.getElementById('schedule-container');
             
+            if (!track.semesters || track.semesters.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">Расписание для этого трека пока не добавлено.</p>';
+                return;
+            }
+
             let html = '<div class="timeline">';
             track.semesters.forEach(sem => {
                 html += '<div class="semester-column">';
                 
+                // Верхние дисциплины
                 html += '<div class="disciplines-above">';
                 if (sem.disciplines_above && sem.disciplines_above.length > 0) {
                     html += '<ul class="disciplines-list">';
@@ -371,7 +401,7 @@
                 }
                 html += '</div>';
                 
-                // Кружок с цифрой и подписью "сем."
+                // Кружок с номером и подписью "сем."
                 html += `<div class="semester-marker">
                             <span class="semester-number">
                                 ${sem.sem}
@@ -379,6 +409,7 @@
                             </span>
                          </div>`;
                 
+                // Нижние дисциплины
                 html += '<div class="disciplines-below">';
                 if (sem.disciplines_below && sem.disciplines_below.length > 0) {
                     html += '<ul class="disciplines-list">';
@@ -393,16 +424,26 @@
             
             container.innerHTML = html;
 
+            // Подсветка активной кнопки трека
             document.querySelectorAll('.top-nav button').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.querySelector(`[data-track="${trackId}"]`);
             if (activeBtn) activeBtn.classList.add('active');
         }
 
+        // === 3. ПЕРЕКЛЮЧАТЕЛЬ ГОДОВ ===
+        document.getElementById('year-select').addEventListener('change', function() {
+            loadYear(this.value);                     // Загружаем выбранный год
+        });
+
+        // === 4. КЛИКИ ПО КНОПКАМ ТРЕКОВ ===
         document.querySelectorAll('.top-nav button').forEach(button => {
             button.addEventListener('click', function() {
                 showTrack(this.getAttribute('data-track'));
             });
         });
+
+        // === 5. ПЕРВЫЙ ЗАПУСК — загружаем 2025 год (выбран по умолчанию) ===
+        loadYear('schedule-2025.json');
     </script>
 </body>
 </html>
